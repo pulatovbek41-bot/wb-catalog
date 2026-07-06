@@ -127,6 +127,25 @@
     color: var(--hint);
     padding: 8px 0 4px;
   }
+  /* Ikki ustunli katalog — kartochkalar yonma-yon */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+  .card { margin-bottom: 0; }
+  .body { padding: 10px; }
+  .title { font-size: 14px; margin-bottom: 4px; }
+  .price { font-size: 15px; }
+  .cashback, .places { font-size: 11px; padding: 3px 8px; }
+  .price-row { gap: 5px; margin-bottom: 6px; }
+  .desc { font-size: 12px; margin-bottom: 8px; }
+  summary { font-size: 12px; }
+  details { padding: 8px 10px; margin-bottom: 8px; border-radius: 8px; }
+  details .tz { font-size: 12px; }
+  .sample-note { font-size: 11px; padding: 6px 8px; }
+  .btn { padding: 10px; font-size: 14px; border-radius: 10px; }
   .desc { font-size: 14px; color: var(--text); line-height: 1.45; margin-bottom: 10px; white-space: pre-wrap; }
   details {
     background: rgba(123, 44, 191, 0.06);
@@ -212,7 +231,7 @@
       app.innerHTML = '<div class="empty"><div class="ico">😔</div>Сейчас нет доступных товаров.<br>Загляните позже!</div>';
       return;
     }
-    var html = "";
+    var html = '<div class="grid">';
     for (var i = 0; i < items.length; i++) {
       var it = items[i];
       // Qolgan joylar soni (jadvaldagi limit - zakazlar soni)
@@ -261,6 +280,7 @@
       }
       html += '</div></div>';
     }
+    html += '</div>';
     html += '<div class="footer">💜 WB Раздача — кэшбэк за отзыв через СБП</div>';
     app.innerHTML = html;
   }
