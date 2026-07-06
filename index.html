@@ -55,12 +55,18 @@
     margin-bottom: 16px;
     box-shadow: 0 2px 10px rgba(0,0,0,0.06);
   }
-  .card img {
+  .card img.product {
     width: 100%;
-    height: 260px;
-    object-fit: cover;
+    height: auto;
     display: block;
     background: #eee;
+  }
+  .sample-img {
+    width: 100%;
+    height: auto;
+    display: block;
+    border-radius: 8px;
+    margin-top: 8px;
   }
   .card .noimg {
     width: 100%;
@@ -152,7 +158,17 @@
     }
   }
 
-  function render(items) {
+  function sampleBlock(title, urls) {
+    if (!urls || !urls.length) return "";
+    var h = '<details><summary>' + title + '</summary>';
+    for (var k = 0; k < urls.length; k++) {
+      h += '<img class="sample-img" src="' + esc(urls[k]) + '" alt="" onerror="this.remove()">';
+    }
+    h += '</details>';
+    return h;
+  }
+
+  function render(items, namunaZakaz, namunaOtziv) {
     var app = document.getElementById("app");
     if (!items || !items.length) {
       app.innerHTML = '<div class="empty"><div class="ico">😔</div>Сейчас нет доступных товаров.<br>Загляните позже!</div>';
@@ -163,7 +179,7 @@
       var it = items[i];
       html += '<div class="card">';
       if (it.rasm_url) {
-        html += '<img src="' + esc(it.rasm_url) + '" alt="" onerror="this.outerHTML=\'<div class=noimg>🛍</div>\'">';
+        html += '<img class="product" src="' + esc(it.rasm_url) + '" alt="" onerror="this.outerHTML=\'<div class=noimg>🛍</div>\'">';
       } else {
         html += '<div class="noimg">🛍</div>';
       }
@@ -177,15 +193,27 @@
       if (it.tz) {
         html += '<details><summary>📋 Техническое задание</summary><div class="tz">' + esc(it.tz) + '</div></details>';
       }
+      html += sampleBlock('📸 Образец скриншота заказа', namunaZakaz);
+      html += sampleBlock('⭐ Образец скриншота отзыва', namunaOtziv);
       html += '<button class="btn" onclick="zakaz(\'' + esc(it.nomi).replace(/'/g, "\\'") + '\')">🛒 Заказать</button>';
       html += '</div></div>';
     }
     app.innerHTML = html;
   }
 
-  fetch(API)
-    .then(function (r) { return r.json(); })
-    .then(render)
+  function safeJson(r) { return r.json().catch(function () { return null; }); }
+
+  Promise.all([
+    fetch(API).then(safeJson),
+    fetch(API + "?mode=namuna").then(safeJson).catch(function () { return null; }),
+    fetch(API + "?mode=namuna&turi=otziv").then(safeJson).catch(function () { return null; })
+  ])
+    .then(function (res) {
+      var items = res[0];
+      var nz = (res[1] && res[1].urls) || [];
+      var no = (res[2] && res[2].urls) || [];
+      render(items, nz, no);
+    })
     .catch(function () {
       document.getElementById("app").innerHTML =
         '<div class="empty"><div class="ico">⚠️</div>Не удалось загрузить товары.<br>Попробуйте позже.</div>';
