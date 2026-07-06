@@ -96,14 +96,36 @@
     flex-wrap: wrap;
     margin-bottom: 8px;
   }
-  .price { font-size: 16px; font-weight: 600; }
+  .price { font-size: 18px; font-weight: 800; }
   .cashback {
     background: #e8f9ee;
     color: #17a54a;
     font-size: 13px;
     font-weight: 700;
-    padding: 3px 10px;
+    padding: 4px 10px;
     border-radius: 20px;
+  }
+  .places {
+    background: #fff0f0;
+    color: #e5484d;
+    font-size: 13px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 20px;
+  }
+  .places.ok {
+    background: #eef4ff;
+    color: #3b6fe0;
+  }
+  .btn:disabled {
+    background: #c7c7cc;
+    cursor: default;
+  }
+  .footer {
+    text-align: center;
+    font-size: 12px;
+    color: var(--hint);
+    padding: 8px 0 4px;
   }
   .desc { font-size: 14px; color: var(--text); line-height: 1.45; margin-bottom: 10px; white-space: pre-wrap; }
   details {
@@ -160,6 +182,11 @@
     return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   }
 
+  // Rasm o'lchamini kichraytirib tez yuklaymiz (googleusercontent =sNNNN parametri)
+  function imgUrl(u, size) {
+    return String(u).replace(/=s\d+/, "=s" + size);
+  }
+
   function zakaz(nomi) {
     if (tg && tg.sendData) {
       tg.sendData(JSON.stringify({ nomi: nomi }));
@@ -173,7 +200,7 @@
     var h = '<details><summary>' + title + '</summary>';
     if (note) h += '<div class="sample-note">' + note + '</div>';
     for (var k = 0; k < urls.length; k++) {
-      h += '<img class="sample-img" src="' + esc(urls[k]) + '" alt="" onerror="this.remove()">';
+      h += '<img class="sample-img" src="' + esc(imgUrl(urls[k], 1000)) + '" alt="" onerror="this.remove()">';
     }
     h += '</details>';
     return h;
@@ -188,17 +215,32 @@
     var html = "";
     for (var i = 0; i < items.length; i++) {
       var it = items[i];
+      // Qolgan joylar soni (jadvaldagi limit - zakazlar soni)
+      var qoldi = null;
+      var lim = parseInt(it.limit, 10);
+      var son = parseInt(it.son, 10);
+      if (!isNaN(lim) && lim > 0) {
+        qoldi = lim - (isNaN(son) ? 0 : son);
+        if (qoldi < 0) qoldi = 0;
+      }
       html += '<div class="card">';
       if (it.rasm_url) {
-        html += '<img class="product" src="' + esc(it.rasm_url) + '" alt="" onerror="this.outerHTML=\'<div class=noimg>🛍</div>\'">';
+        html += '<img class="product" src="' + esc(imgUrl(it.rasm_url, 1200)) + '" alt="" onerror="this.outerHTML=\'<div class=noimg>🛍</div>\'">';
       } else {
         html += '<div class="noimg">🛍</div>';
       }
       html += '<div class="body">';
       html += '<div class="title">' + esc(it.nomi) + '</div>';
       html += '<div class="price-row">';
-      if (it.narxi) html += '<span class="price">' + esc(it.narxi) + '</span>';
+      if (it.narxi) html += '<span class="price">💰 ' + esc(it.narxi) + '</span>';
       if (it.vazvrat) html += '<span class="cashback">💸 Кэшбэк ' + esc(it.vazvrat) + ' ₽</span>';
+      if (qoldi !== null) {
+        if (qoldi > 0) {
+          html += '<span class="places ' + (qoldi > 5 ? 'ok' : '') + '">🔥 Осталось ' + qoldi + ' мест</span>';
+        } else {
+          html += '<span class="places">😔 Мест нет</span>';
+        }
+      }
       html += '</div>';
       if (it.tavsif) html += '<div class="desc">' + esc(it.tavsif) + '</div>';
       if (it.tz) {
@@ -212,9 +254,14 @@
         '⭐ Образец скриншота отзыва', namunaOtziv,
         '⚠️ Ваш скриншот отзыва должен быть похож на ОДИН из этих образцов — выберите любой и пришлите такой же!'
       );
-      html += '<button class="btn" onclick="zakaz(\'' + esc(it.nomi).replace(/'/g, "\\'") + '\')">🛒 Заказать</button>';
+      if (qoldi === 0) {
+        html += '<button class="btn" disabled>😔 Мест больше нет</button>';
+      } else {
+        html += '<button class="btn" onclick="zakaz(\'' + esc(it.nomi).replace(/'/g, "\\'") + '\')">🛒 Заказать</button>';
+      }
       html += '</div></div>';
     }
+    html += '<div class="footer">💜 WB Раздача — кэшбэк за отзыв через СБП</div>';
     app.innerHTML = html;
   }
 
