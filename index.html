@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>WB Раздача — Каталог</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  :root {
+    --bg: var(--tg-theme-bg-color, #f4f4f7);
+    --card: var(--tg-theme-secondary-bg-color, #ffffff);
+    --text: var(--tg-theme-text-color, #1a1a1a);
+    --hint: var(--tg-theme-hint-color, #8e8e93);
+    --accent: #cb11ab;
+    --accent2: #7b2cbf;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    padding: 12px 12px 24px;
+  }
+  .header {
+    text-align: center;
+    padding: 10px 0 16px;
+  }
+  .header h1 {
+    font-size: 20px;
+    background: linear-gradient(90deg, var(--accent2), var(--accent));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .header p { font-size: 13px; color: var(--hint); margin-top: 4px; }
+  .loader {
+    text-align: center;
+    padding: 60px 0;
+    color: var(--hint);
+    font-size: 15px;
+  }
+  .spinner {
+    width: 36px; height: 36px;
+    border: 4px solid rgba(203, 17, 171, 0.2);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    margin: 0 auto 14px;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .card {
+    background: var(--card);
+    border-radius: 16px;
+    overflow: hidden;
+    margin-bottom: 16px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+  }
+  .card img {
+    width: 100%;
+    height: 260px;
+    object-fit: cover;
+    display: block;
+    background: #eee;
+  }
+  .card .noimg {
+    width: 100%;
+    height: 160px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 48px;
+    background: linear-gradient(135deg, #7b2cbf22, #cb11ab22);
+  }
+  .body { padding: 14px; }
+  .title { font-size: 17px; font-weight: 700; margin-bottom: 6px; }
+  .price-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 8px;
+  }
+  .price { font-size: 16px; font-weight: 600; }
+  .cashback {
+    background: #e8f9ee;
+    color: #17a54a;
+    font-size: 13px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 20px;
+  }
+  .desc { font-size: 14px; color: var(--text); line-height: 1.45; margin-bottom: 10px; white-space: pre-wrap; }
+  details {
+    background: rgba(123, 44, 191, 0.06);
+    border-radius: 10px;
+    padding: 10px 12px;
+    margin-bottom: 12px;
+  }
+  summary {
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    color: var(--accent2);
+  }
+  details .tz {
+    font-size: 13px;
+    line-height: 1.5;
+    margin-top: 8px;
+    white-space: pre-wrap;
+    color: var(--text);
+  }
+  .btn {
+    width: 100%;
+    padding: 14px;
+    border: none;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 700;
+    color: #fff;
+    background: linear-gradient(90deg, var(--accent2), var(--accent));
+    cursor: pointer;
+    transition: transform 0.1s;
+  }
+  .btn:active { transform: scale(0.97); }
+  .empty { text-align: center; padding: 60px 16px; color: var(--hint); }
+  .empty .ico { font-size: 48px; margin-bottom: 12px; }
+</style>
+</head>
+<body>
+  <div class="header">
+    <h1>🛍 WB РАЗДАЧА</h1>
+    <p>Выберите товар — кэшбэк за отзыв 💸</p>
+  </div>
+  <div id="app">
+    <div class="loader"><div class="spinner"></div>Загружаем товары...</div>
+  </div>
+
+<script>
+  var API = "https://script.google.com/macros/s/AKfycbyVJO6wV_-czVeTuOqyvE2pKdXD1n0MiHXnm8Q5uyfswktRqiQRaevsCK7lHbwzkf4q7Q/exec";
+  var tg = window.Telegram ? window.Telegram.WebApp : null;
+  if (tg) { tg.ready(); tg.expand(); }
+
+  function esc(s) {
+    return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+
+  function zakaz(nomi) {
+    if (tg && tg.sendData) {
+      tg.sendData(JSON.stringify({ nomi: nomi }));
+    } else {
+      alert("Откройте каталог через кнопку в боте @wb_razdachabot");
+    }
+  }
+
+  function render(items) {
+    var app = document.getElementById("app");
+    if (!items || !items.length) {
+      app.innerHTML = '<div class="empty"><div class="ico">😔</div>Сейчас нет доступных товаров.<br>Загляните позже!</div>';
+      return;
+    }
+    var html = "";
+    for (var i = 0; i < items.length; i++) {
+      var it = items[i];
+      html += '<div class="card">';
+      if (it.rasm_url) {
+        html += '<img src="' + esc(it.rasm_url) + '" alt="" onerror="this.outerHTML=\'<div class=noimg>🛍</div>\'">';
+      } else {
+        html += '<div class="noimg">🛍</div>';
+      }
+      html += '<div class="body">';
+      html += '<div class="title">' + esc(it.nomi) + '</div>';
+      html += '<div class="price-row">';
+      if (it.narxi) html += '<span class="price">' + esc(it.narxi) + '</span>';
+      if (it.vazvrat) html += '<span class="cashback">💸 Кэшбэк ' + esc(it.vazvrat) + ' ₽</span>';
+      html += '</div>';
+      if (it.tavsif) html += '<div class="desc">' + esc(it.tavsif) + '</div>';
+      if (it.tz) {
+        html += '<details><summary>📋 Техническое задание</summary><div class="tz">' + esc(it.tz) + '</div></details>';
+      }
+      html += '<button class="btn" onclick="zakaz(\'' + esc(it.nomi).replace(/'/g, "\\'") + '\')">🛒 Заказать</button>';
+      html += '</div></div>';
+    }
+    app.innerHTML = html;
+  }
+
+  fetch(API)
+    .then(function (r) { return r.json(); })
+    .then(render)
+    .catch(function () {
+      document.getElementById("app").innerHTML =
+        '<div class="empty"><div class="ico">⚠️</div>Не удалось загрузить товары.<br>Попробуйте позже.</div>';
+    });
+</script>
+</body>
+</html>
