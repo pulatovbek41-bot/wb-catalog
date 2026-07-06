@@ -68,6 +68,16 @@
     border-radius: 8px;
     margin-top: 8px;
   }
+  .sample-note {
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.4;
+    margin-top: 8px;
+    padding: 8px 12px;
+    background: #fff4e5;
+    color: #b45309;
+    border-radius: 8px;
+  }
   .card .noimg {
     width: 100%;
     height: 160px;
@@ -158,9 +168,10 @@
     }
   }
 
-  function sampleBlock(title, urls) {
+  function sampleBlock(title, urls, note) {
     if (!urls || !urls.length) return "";
     var h = '<details><summary>' + title + '</summary>';
+    if (note) h += '<div class="sample-note">' + note + '</div>';
     for (var k = 0; k < urls.length; k++) {
       h += '<img class="sample-img" src="' + esc(urls[k]) + '" alt="" onerror="this.remove()">';
     }
@@ -193,8 +204,14 @@
       if (it.tz) {
         html += '<details><summary>📋 Техническое задание</summary><div class="tz">' + esc(it.tz) + '</div></details>';
       }
-      html += sampleBlock('📸 Образец скриншота заказа', namunaZakaz);
-      html += sampleBlock('⭐ Образец скриншота отзыва', namunaOtziv);
+      html += sampleBlock(
+        '📸 Образец скриншота заказа', namunaZakaz,
+        '⚠️ Ваш скриншот заказа должен быть похож на ОДИН из этих образцов — выберите любой и пришлите такой же!'
+      );
+      html += sampleBlock(
+        '⭐ Образец скриншота отзыва', namunaOtziv,
+        '⚠️ Ваш скриншот отзыва должен быть похож на ОДИН из этих образцов — выберите любой и пришлите такой же!'
+      );
       html += '<button class="btn" onclick="zakaz(\'' + esc(it.nomi).replace(/'/g, "\\'") + '\')">🛒 Заказать</button>';
       html += '</div></div>';
     }
