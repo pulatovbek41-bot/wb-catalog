@@ -1,1 +1,1 @@
-WB Catalog
+WB Catalog - katalog
