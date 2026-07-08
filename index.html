@@ -319,7 +319,7 @@
       html += '<div class="title">' + esc(it.nomi) + '</div>';
       html += '<div class="price-row">';
       if (it.narxi) html += '<span class="price">💰 ' + esc(it.narxi) + '</span>';
-      if (it.vazvrat) html += '<span class="cashback">💸 Кэшбек ' + esc(it.vazvrat) + ' ₽</span>';
+      if (it.vazvrat) html += '<span class="cashback">💸 Кэшбэк ' + esc(it.vazvrat) + ' ₽</span>';
       if (qoldi !== null) {
         if (qoldi > 0) {
           html += '<span class="places ' + (qoldi > 5 ? 'ok' : '') + '">🔥 Осталось ' + qoldi + ' мест</span>';
@@ -344,7 +344,7 @@
       );
       html += sampleBlock(
         '⭐ Образец скриншота отзыва', namunaOtziv,
-        '⚠️ Ваш скриншот отзыва должен быть похоо на ОДИН из этих образцов — выберите любой и пришлите такой же!',
+        '⚠️ Ваш скриншот отзыва должен быть похож на ОДИН из этих образцов — выберите любой и пришлите такой же!',
         i, 'no'
       );
       kartaHolat[i] = { qolgan: kerak, done: {} };
@@ -359,7 +359,7 @@
       html += '</div></div>';
     }
     html += '</div>';
-    html += '<div class="footer">💜 WB Раздача — кэшеэк за отзыв через СБП</div>';
+    html += '<div class="footer">💜 WB Раздача — кэшбэк за отзыв через СБП</div>';
     app.innerHTML = html;
   }
 
