@@ -63,6 +63,37 @@
     70% { box-shadow: 0 0 0 7px rgba(107,245,154,0); }
     100% { box-shadow: 0 0 0 0 rgba(107,245,154,0); }
   }
+  /* Kategoriya tugmalari (chip) — gorizontal, siljiydigan qator */
+  .cats {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding: 2px 2px 10px;
+    margin-bottom: 4px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .cats::-webkit-scrollbar { display: none; }
+  .cat {
+    flex: 0 0 auto;
+    padding: 8px 15px;
+    border: 1.5px solid rgba(123, 44, 191, 0.25);
+    background: rgba(255, 255, 255, 0.75);
+    color: var(--accent2);
+    font-size: 13px;
+    font-weight: 700;
+    border-radius: 20px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: transform 0.1s;
+  }
+  .cat:active { transform: scale(0.95); }
+  .cat.aktiv {
+    background: linear-gradient(90deg, var(--accent2), var(--accent));
+    color: #fff;
+    border-color: transparent;
+    box-shadow: 0 3px 10px rgba(203, 17, 171, 0.3);
+  }
   .btn-note {
     font-size: 11px;
     font-weight: 600;
@@ -265,7 +296,11 @@
   }
 
   function esc(s) {
-    return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    // & < > VA " ni escape qilamiz — qiymat atribut ichida (src="...", onclick="...")
+    // ishlatilgani uchun " ni ham escape qilmasak, jadvaldagi nom/URL atributdan
+    // chiqib, hodisa (masalan onmouseover) qo'shishi mumkin edi (XSS).
+    return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
   }
 
   // Rasm o'lchamini kichraytirib tez yuklaymiz (googleusercontent =sNNNN parametri)
@@ -292,13 +327,72 @@
     return h;
   }
 
-  function render(items, namunaZakaz, namunaOtziv) {
+  // ---- Kategoriyalar (jadvaldagi "kategoriya" ustunidan avtomatik) ----
+  var ALL = { items: [], nz: [], no: [] };
+  var joriyKat = null;  // null = "Все" (barcha mahsulotlar)
+  // Ma'lum kategoriyalar uchun emoji va ko'rsatish tartibi (jadval qiymati
+  // kichik harflarda solishtiriladi). Boshqa nomlar ham ishlaydi — emojisiz.
+  var KAT_TARTIB = ["детское", "женское", "мужское"];
+  var KAT_EMOJI = { "детское": "👶", "женское": "👩", "мужское": "👨" };
+
+  function kategoriyalar(items) {
+    var korilgan = {}, royxat = [];
+    for (var i = 0; i < items.length; i++) {
+      var k = String((items[i] && items[i].kategoriya) || "").trim();
+      if (!k) continue;
+      var lk = k.toLowerCase();
+      if (!korilgan[lk]) { korilgan[lk] = true; royxat.push(k); }
+    }
+    royxat.sort(function (a, b) {
+      var ia = KAT_TARTIB.indexOf(a.toLowerCase());
+      var ib = KAT_TARTIB.indexOf(b.toLowerCase());
+      return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
+    });
+    return royxat;
+  }
+
+  function katChip(val, label) {
+    var aktiv = (val === null && joriyKat === null) ||
+      (val !== null && joriyKat !== null && val.toLowerCase() === joriyKat.toLowerCase());
+    var arg = val === null ? "null" : "'" + esc(val).replace(/'/g, "\\'") + "'";
+    return '<button class="cat' + (aktiv ? ' aktiv' : '') + '" onclick="katTanla(' + arg + ')">' +
+      esc(label) + '</button>';
+  }
+
+  function katBar(cats) {
+    if (!cats.length) return "";  // kategoriya yo'q bo'lsa — tugmalar ko'rsatilmaydi
+    var h = '<div class="cats">' + katChip(null, "🛍 Все");
+    for (var i = 0; i < cats.length; i++) {
+      var e = KAT_EMOJI[cats[i].toLowerCase()];
+      h += katChip(cats[i], (e ? e + " " : "") + cats[i]);
+    }
+    return h + '</div>';
+  }
+
+  function katTanla(val) {
+    joriyKat = val;
+    chiz();  // faqat #app qayta chiziladi (subs sarlavhada — o'zgarmaydi)
+  }
+
+  function chiz() {
+    var items = ALL.items || [];
+    var cats = kategoriyalar(items);
+    var korsatiladigan = (joriyKat === null) ? items : items.filter(function (it) {
+      return String((it && it.kategoriya) || "").trim().toLowerCase() === joriyKat.toLowerCase();
+    });
+    render(korsatiladigan, ALL.nz, ALL.no, katBar(cats));
+  }
+
+  function render(items, namunaZakaz, namunaOtziv, catsHtml) {
+    catsHtml = catsHtml || "";
     var app = document.getElementById("app");
     if (!items || !items.length) {
-      app.innerHTML = '<div class="empty"><div class="ico">😔</div>Сейчас нет доступных товаров.<br>Загляните позже!</div>';
+      app.innerHTML = catsHtml +
+        '<div class="empty"><div class="ico">😔</div>Сейчас нет доступных товаров.<br>Загляните позже!</div>';
       return;
     }
-    var html = '<div class="grid">';
+    kartaHolat = {};  // har chizishda holatni yangilaymiz
+    var html = catsHtml + '<div class="grid">';
     for (var i = 0; i < items.length; i++) {
       var it = items[i];
       // Qolgan joylar soni (jadvaldagi limit - zakazlar soni)
@@ -371,10 +465,10 @@
     fetch(API + "?mode=namuna&turi=otziv").then(safeJson).catch(function () { return null; })
   ])
     .then(function (res) {
-      var items = res[0];
-      var nz = (res[1] && res[1].urls) || [];
-      var no = (res[2] && res[2].urls) || [];
-      render(items, nz, no);
+      ALL.items = res[0] || [];
+      ALL.nz = (res[1] && res[1].urls) || [];
+      ALL.no = (res[2] && res[2].urls) || [];
+      chiz();
     })
     .catch(function () {
       document.getElementById("app").innerHTML =
