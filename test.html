@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>WB Раздача — Каталог</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  :root {
+    --bg: var(--tg-theme-bg-color, #f4f4f7);
+    --card: var(--tg-theme-secondary-bg-color, #ffffff);
+    --text: var(--tg-theme-text-color, #1a1a1a);
+    --hint: var(--tg-theme-hint-color, #8e8e93);
+    --accent: #cb11ab;
+    --accent2: #7b2cbf;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background:
+      radial-gradient(circle at 15% 0%, rgba(203,17,171,0.16), transparent 40%),
+      radial-gradient(circle at 85% 10%, rgba(123,44,191,0.16), transparent 42%),
+      linear-gradient(165deg, #f6ecfc 0%, #fdeaf5 45%, #eef2fb 100%);
+    background-attachment: fixed;
+    color: var(--text);
+    padding: 12px 12px 24px;
+    min-height: 100vh;
+  }
+  .header {
+    text-align: center;
+    padding: 14px 0 16px;
+  }
+  .header h1 {
+    font-size: 22px;
+    background: linear-gradient(90deg, var(--accent2), var(--accent));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .header p { font-size: 13px; color: var(--hint); margin-top: 4px; }
+  /* Obunachilar soni — chiroyli nishon (social proof) */
+  .subs {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 10px;
+    padding: 7px 16px;
+    background: linear-gradient(90deg, var(--accent2), var(--accent));
+    color: #fff;
+    font-size: 13px;
+    font-weight: 700;
+    border-radius: 22px;
+    box-shadow: 0 4px 14px rgba(203, 17, 171, 0.32);
+  }
+  .subs .dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: #6bf59a;
+    box-shadow: 0 0 0 0 rgba(107,245,154,0.7);
+    animation: pulse 1.8s infinite;
+  }
+  @keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(107,245,154,0.6); }
+    70% { box-shadow: 0 0 0 7px rgba(107,245,154,0); }
+    100% { box-shadow: 0 0 0 0 rgba(107,245,154,0); }
+  }
+  /* Kategoriya tugmalari (chip) — gorizontal, siljiydigan qator */
+  .cats {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding: 2px 2px 10px;
+    margin-bottom: 4px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .cats::-webkit-scrollbar { display: none; }
+  .cat {
+    flex: 0 0 auto;
+    padding: 8px 15px;
+    border: 1.5px solid rgba(123, 44, 191, 0.25);
+    background: rgba(255, 255, 255, 0.75);
+    color: var(--accent2);
+    font-size: 13px;
+    font-weight: 700;
+    border-radius: 20px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: transform 0.1s;
+  }
+  .cat:active { transform: scale(0.95); }
+  .cat.aktiv {
+    background: linear-gradient(90deg, var(--accent2), var(--accent));
+    color: #fff;
+    border-color: transparent;
+    box-shadow: 0 3px 10px rgba(203, 17, 171, 0.3);
+  }
+  .btn-note {
+    font-size: 11px;
+    font-weight: 600;
+    color: #b45309;
+    background: #fff4e5;
+    padding: 7px 9px;
+    border-radius: 8px;
+    margin-bottom: 7px;
+    text-align: center;
+    line-height: 1.35;
+  }
+  .loader {
+    text-align: center;
+    padding: 60px 0;
+    color: var(--hint);
+    font-size: 15px;
+  }
+  .spinner {
+    width: 36px; height: 36px;
+    border: 4px solid rgba(203, 17, 171, 0.2);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    margin: 0 auto 14px;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .card {
+    background: var(--card);
+    border-radius: 16px;
+    overflow: hidden;
+    margin-bottom: 16px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+  }
+  .card img.product {
+    width: 100%;
+    height: auto;
+    display: block;
+    background: #eee;
+  }
+  .sample-img {
+    width: 100%;
+    height: auto;
+    display: block;
+    border-radius: 8px;
+    margin-top: 8px;
+  }
+  .sample-note {
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.4;
+    margin-top: 8px;
+    padding: 8px 12px;
+    background: #fff4e5;
+    color: #b45309;
+    border-radius: 8px;
+  }
+  .card .noimg {
+    width: 100%;
+    height: 160px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 48px;
+    background: linear-gradient(135deg, #7b2cbf22, #cb11ab22);
+  }
+  .body { padding: 14px; }
+  .title { font-size: 17px; font-weight: 700; margin-bottom: 6px; }
+  .price-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 8px;
+  }
+  .price { font-size: 18px; font-weight: 800; }
+  .cashback {
+    background: #e8f9ee;
+    color: #17a54a;
+    font-size: 13px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 20px;
+  }
+  .places {
+    background: #fff0f0;
+    color: #e5484d;
+    font-size: 13px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 20px;
+  }
+  .places.ok {
+    background: #eef4ff;
+    color: #3b6fe0;
+  }
+  .btn:disabled {
+    background: #c7c7cc;
+    cursor: default;
+  }
+  .footer {
+    text-align: center;
+    font-size: 12px;
+    color: var(--hint);
+    padding: 8px 0 4px;
+  }
+  /* Ikki ustunli katalog — kartochkalar yonma-yon */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+  .card { margin-bottom: 0; }
+  .body { padding: 10px; }
+  .title { font-size: 14px; margin-bottom: 4px; }
+  .price { font-size: 15px; }
+  .cashback, .places { font-size: 11px; padding: 3px 8px; }
+  .price-row { gap: 5px; margin-bottom: 6px; }
+  .desc { font-size: 12px; margin-bottom: 8px; }
+  summary { font-size: 12px; }
+  details { padding: 8px 10px; margin-bottom: 8px; border-radius: 8px; }
+  details .tz { font-size: 12px; }
+  .sample-note { font-size: 11px; padding: 6px 8px; }
+  .btn { padding: 10px; font-size: 14px; border-radius: 10px; }
+  .desc { font-size: 14px; color: var(--text); line-height: 1.45; margin-bottom: 10px; white-space: pre-wrap; }
+  details {
+    background: rgba(123, 44, 191, 0.06);
+    border-radius: 10px;
+    padding: 10px 12px;
+    margin-bottom: 12px;
+  }
+  summary {
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    color: var(--accent2);
+  }
+  details .tz {
+    font-size: 13px;
+    line-height: 1.5;
+    margin-top: 8px;
+    white-space: pre-wrap;
+    color: var(--text);
+  }
+  .btn {
+    width: 100%;
+    padding: 14px;
+    border: none;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 700;
+    color: #fff;
+    background: linear-gradient(90deg, var(--accent2), var(--accent));
+    cursor: pointer;
+    transition: transform 0.1s;
+  }
+  .btn:active { transform: scale(0.97); }
+  .empty { text-align: center; padding: 60px 16px; color: var(--hint); }
+  .empty .ico { font-size: 48px; margin-bottom: 12px; }
+</style>
+</head>
+<body>
+  <div class="header">
+    <h1>🛍 WB РАЗДАЧА</h1>
+    <p>Выберите товар — кэшбэк за отзыв 💸</p>
+    <div id="subs" class="subs" style="display:none"><span class="dot"></span><span id="subsTxt"></span></div>
+  </div>
+  <div id="app">
+    <div class="loader"><div class="spinner"></div>Загружаем товары...</div>
+  </div>
+
+<script>
+  var API = "https://script.google.com/macros/s/AKfycbyVJO6wV_-czVeTuOqyvE2pKdXD1n0MiHXnm8Q5uyfswktRqiQRaevsCK7lHbwzkf4q7Q/exec";
+  var tg = window.Telegram ? window.Telegram.WebApp : null;
+  if (tg) { tg.ready(); tg.expand(); }
+
+  // Obunachilar soni — bot URL'ga ?obuna=NNN qo'shib yuboradi
+  (function () {
+    var p = new URLSearchParams(location.search);
+    var n = parseInt(p.get("obuna"), 10);
+    if (!isNaN(n) && n > 0) {
+      document.getElementById("subsTxt").textContent = "Нам доверяют " + n.toLocaleString("ru-RU") + " человек";
+      document.getElementById("subs").style.display = "inline-flex";
+    }
+  })();
+
+  // Har kartochka uchun: zakaz tugmasi TZ va ikkala namuna ochilgach faollashadi
+  var kartaHolat = {};
+  function ochildi(idx, kalit) {
+    var st = kartaHolat[idx];
+    if (!st || st.done[kalit]) return;
+    st.done[kalit] = true;
+    st.qolgan--;
+    if (st.qolgan <= 0) {
+      var btn = document.getElementById("btn-" + idx);
+      var note = document.getElementById("note-" + idx);
+      if (btn) { btn.disabled = false; btn.textContent = "🛒 Заказать"; }
+      if (note) note.style.display = "none";
+    }
+  }
+
+  function esc(s) {
+    // & < > VA " ni escape qilamiz — qiymat atribut ichida (src="...", onclick="...")
+    // ishlatilgani uchun " ni ham escape qilmasak, jadvaldagi nom/URL atributdan
+    // chiqib, hodisa (masalan onmouseover) qo'shishi mumkin edi (XSS).
+    return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  }
+
+  // Rasm o'lchamini kichraytirib tez yuklaymiz (googleusercontent =sNNNN parametri)
+  function imgUrl(u, size) {
+    return String(u).replace(/=s\d+/, "=s" + size);
+  }
+
+  function zakaz(nomi) {
+    if (tg && tg.sendData) {
+      tg.sendData(JSON.stringify({ nomi: nomi }));
+    } else {
+      alert("Откройте каталог через кнопку в боте @wb_razdachabot");
+    }
+  }
+
+  function sampleBlock(title, urls, note, idx, key) {
+    if (!urls || !urls.length) return "";
+    var h = '<details ontoggle="if(this.open)ochildi(' + idx + ',\'' + key + '\')"><summary>' + title + '</summary>';
+    if (note) h += '<div class="sample-note">' + note + '</div>';
+    for (var k = 0; k < urls.length; k++) {
+      h += '<img class="sample-img" src="' + esc(imgUrl(urls[k], 1000)) + '" alt="" onerror="this.remove()">';
+    }
+    h += '</details>';
+    return h;
+  }
+
+  // ---- Kategoriyalar (jadvaldagi "kategoriya" ustunidan avtomatik) ----
+  var ALL = { items: [], nz: [], no: [] };
+  var joriyKat = null;  // null = "Все" (barcha mahsulotlar)
+  // Ma'lum kategoriyalar uchun emoji va ko'rsatish tartibi (jadval qiymati
+  // kichik harflarda solishtiriladi). Boshqa nomlar ham ishlaydi — emojisiz.
+  var KAT_TARTIB = ["детское", "женское", "мужское"];
+  var KAT_EMOJI = { "детское": "👶", "женское": "👩", "мужское": "👨" };
+
+  function kategoriyalar(items) {
+    var korilgan = {}, royxat = [];
+    for (var i = 0; i < items.length; i++) {
+      var k = String((items[i] && items[i].kategoriya) || "").trim();
+      if (!k) continue;
+      var lk = k.toLowerCase();
+      if (!korilgan[lk]) { korilgan[lk] = true; royxat.push(k); }
+    }
+    royxat.sort(function (a, b) {
+      var ia = KAT_TARTIB.indexOf(a.toLowerCase());
+      var ib = KAT_TARTIB.indexOf(b.toLowerCase());
+      return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
+    });
+    return royxat;
+  }
+
+  function katChip(val, label) {
+    var aktiv = (val === null && joriyKat === null) ||
+      (val !== null && joriyKat !== null && val.toLowerCase() === joriyKat.toLowerCase());
+    var arg = val === null ? "null" : "'" + esc(val).replace(/'/g, "\\'") + "'";
+    return '<button class="cat' + (aktiv ? ' aktiv' : '') + '" onclick="katTanla(' + arg + ')">' +
+      esc(label) + '</button>';
+  }
+
+  function katBar(cats) {
+    if (!cats.length) return "";  // kategoriya yo'q bo'lsa — tugmalar ko'rsatilmaydi
+    var h = '<div class="cats">' + katChip(null, "🛍 Все");
+    for (var i = 0; i < cats.length; i++) {
+      var e = KAT_EMOJI[cats[i].toLowerCase()];
+      h += katChip(cats[i], (e ? e + " " : "") + cats[i]);
+    }
+    return h + '</div>';
+  }
+
+  function katTanla(val) {
+    joriyKat = val;
+    chiz();  // faqat #app qayta chiziladi (subs sarlavhada — o'zgarmaydi)
+  }
+
+  function chiz() {
+    var items = ALL.items || [];
+    var cats = kategoriyalar(items);
+    var korsatiladigan = (joriyKat === null) ? items : items.filter(function (it) {
+      return String((it && it.kategoriya) || "").trim().toLowerCase() === joriyKat.toLowerCase();
+    });
+    render(korsatiladigan, ALL.nz, ALL.no, katBar(cats));
+  }
+
+  function render(items, namunaZakaz, namunaOtziv, catsHtml) {
+    catsHtml = catsHtml || "";
+    var app = document.getElementById("app");
+    if (!items || !items.length) {
+      app.innerHTML = catsHtml +
+        '<div class="empty"><div class="ico">😔</div>Сейчас нет доступных товаров.<br>Загляните позже!</div>';
+      return;
+    }
+    kartaHolat = {};  // har chizishda holatni yangilaymiz
+    var html = catsHtml + '<div class="grid">';
+    for (var i = 0; i < items.length; i++) {
+      var it = items[i];
+      // Qolgan joylar soni (jadvaldagi limit - zakazlar soni)
+      var qoldi = null;
+      var lim = parseInt(it.limit, 10);
+      var son = parseInt(it.son, 10);
+      if (!isNaN(lim) && lim > 0) {
+        qoldi = lim - (isNaN(son) ? 0 : son);
+        if (qoldi < 0) qoldi = 0;
+      }
+      html += '<div class="card">';
+      if (it.rasm_url) {
+        html += '<img class="product" src="' + esc(imgUrl(it.rasm_url, 1200)) + '" alt="" onerror="this.outerHTML=\'<div class=noimg>🛍</div>\'">';
+      } else {
+        html += '<div class="noimg">🛍</div>';
+      }
+      html += '<div class="body">';
+      html += '<div class="title">' + esc(it.nomi) + '</div>';
+      html += '<div class="price-row">';
+      if (it.narxi) html += '<span class="price">💰 ' + esc(it.narxi) + '</span>';
+      if (it.vazvrat) html += '<span class="cashback">💸 Кэшбэк ' + esc(it.vazvrat) + ' ₽</span>';
+      if (qoldi !== null) {
+        if (qoldi > 0) {
+          html += '<span class="places ' + (qoldi > 5 ? 'ok' : '') + '">🔥 Осталось ' + qoldi + ' мест</span>';
+        } else {
+          html += '<span class="places">😔 Мест нет</span>';
+        }
+      }
+      html += '</div>';
+      if (it.tavsif) html += '<div class="desc">' + esc(it.tavsif) + '</div>';
+      // Zakaz tugmasi faollashishi uchun qaysi bloklarni ochish shart (TZ + namunalar)
+      var kerak = 0;
+      if (it.tz) {
+        kerak++;
+        html += '<details ontoggle="if(this.open)ochildi(' + i + ',\'tz\')"><summary>📋 Техническое задание</summary><div class="tz">' + esc(it.tz) + '</div></details>';
+      }
+      if (namunaZakaz && namunaZakaz.length) kerak++;
+      if (namunaOtziv && namunaOtziv.length) kerak++;
+      html += sampleBlock(
+        '📸 Образец скриншота заказа', namunaZakaz,
+        '⚠️ Ваш скриншот заказа должен быть похож на ОДИН из этих образцов — выберите любой и пришлите такой же!',
+        i, 'nz'
+      );
+      html += sampleBlock(
+        '⭐ Образец скриншота отзыва', namunaOtziv,
+        '⚠️ Ваш скриншот отзыва должен быть похож на ОДИН из этих образцов — выберите любой и пришлите такой же!',
+        i, 'no'
+      );
+      kartaHolat[i] = { qolgan: kerak, done: {} };
+      if (qoldi === 0) {
+        html += '<button class="btn" disabled>😔 Мест больше нет</button>';
+      } else if (kerak > 0) {
+        html += '<div class="btn-note" id="note-' + i + '">☝️ Сначала откройте ТЗ и оба образца — потом кнопка активируется</div>';
+        html += '<button class="btn" id="btn-' + i + '" disabled onclick="zakaz(\'' + esc(it.nomi).replace(/'/g, "\\'") + '\')">🔒 Заказать</button>';
+      } else {
+        html += '<button class="btn" id="btn-' + i + '" onclick="zakaz(\'' + esc(it.nomi).replace(/'/g, "\\'") + '\')">🛒 Заказать</button>';
+      }
+      html += '</div></div>';
+    }
+    html += '</div>';
+    html += '<div class="footer">💜 WB Раздача — кэшбэк за отзыв через СБП</div>';
+    app.innerHTML = html;
+  }
+
+  function safeJson(r) { return r.json().catch(function () { return null; }); }
+
+  Promise.all([
+    fetch(API).then(safeJson),
+    fetch(API + "?mode=namuna").then(safeJson).catch(function () { return null; }),
+    fetch(API + "?mode=namuna&turi=otziv").then(safeJson).catch(function () { return null; })
+  ])
+    .then(function (res) {
+      ALL.items = res[0] || [];
+      ALL.nz = (res[1] && res[1].urls) || [];
+      ALL.no = (res[2] && res[2].urls) || [];
+      chiz();
+    })
+    .catch(function () {
+      document.getElementById("app").innerHTML =
+        '<div class="empty"><div class="ico">⚠️</div>Не удалось загрузить товары.<br>Попробуйте позже.</div>';
+    });
+</script>
+</body>
+</html>
